@@ -27,8 +27,8 @@ class ExperimentHandler:
         T = TokenizerClass(config.system, config.embed_lim)
         B = Batcher(config.bsz, config.schemes, config.args, config.max_len, T)
         
-        #self.model = TransformerFlat(config.system, config.attention)
-        self.model = BilstmHier(T.embeddings)
+        self.model = TransformerFlat(config.system, config.attention)
+        #self.model = BilstmHier(T.embeddings)
         model = self.model
         
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
@@ -41,32 +41,52 @@ class ExperimentHandler:
         B.to(self.device) 
 
         for epoch in range(config.epochs):
-            analysis_loss, acc = 0, np.zeros(2)
-            
+            #Training
+            logger = np.zeros(3)
             for k, batch in enumerate(B.make_batches(D.train, config.c_num, config.hier)):
-                if config.hier in ['transformer', 'bilstm']:
-                    loss = 0
-                    for pos, neg in batch:
-                        y_pos = model(pos.ids, pos.mask)
-                        y_neg = model(neg.ids, neg.mask)
-                        loss += self.log_sigmoid_loss(y_pos - y_neg)/len(batch)
-                        acc += [(y_pos>y_neg).item(), 1]
-                else:
-                    pos, neg = batch
-                    y_pos = model(pos.ids, pos.mask)
-                    y_neg = model(neg.ids, neg.mask)
-                    loss = self.log_sigmoid_loss(y_pos - y_neg)
-                    acc += [sum(y_pos - y_neg > 0).item(), len(y_pos)]
-
-                analysis_loss += loss.item()
-
+                if config.hier:  loss, batch_acc = self.calc_batch_hier(model, batch)
+                else:            loss, batch_acc = self.calc_batch(model, batch)
+                logger += [loss.item(), *batch_acc]
+                
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 if config.scheduling: scheduler.step()
 
                 if k%config.debug_sz==0 and k!=0:
-                    print(f'{k:<5} {analysis_loss/config.debug_sz:.3f}   {acc[0]/acc[1]:.3f}')
-                    analysis_loss, acc = 0, np.zeros(2)
+                    print(f'{epoch:<2} {k:<6} {logger[0]/config.debug_sz:.3f}   {logger[1]/logger[2]:.4f}')
+                    logger = np.zeros(3)
+ 
+            #Dev
+            logger = np.zeros(3)
+            for k, batch in enumerate(B.make_batches(D.dev, config.c_num, config.hier)):
+                if config.hier:  loss, batch_acc = self.calc_batch_hier(model, batch, no_grad=True)
+                else:            loss, batch_acc = self.calc_batch(model, batch, no_grad=True)
+                logger += [loss.item(), *batch_acc]
+            
+            print(f'\n{len(D.dev):<5} {logger[0]/k:.3f}   {logger[1]/logger[2]:.4f}\n', 50*'--')
+                
+    def calc_batch_hier(self, model, batch, no_grad=False):
+        if no_grad==True:
+            with torch.no_grad():
+                return self.calc_batch_hier(model, batch, no_grad=False)
+            
+        loss, acc = 0, np.zeros(2)
+        for pos, neg in batch:
+            y_pos = model(pos.ids, pos.mask)
+            y_neg = model(neg.ids, neg.mask)
+            loss += self.log_sigmoid_loss(y_pos - y_neg)/len(batch)
+            acc += [(y_pos>y_neg).item(), 1]
+        return loss, acc
 
-
+    def calc_batch(self, model, batch, no_grad=False):
+        if no_grad==True:
+            with torch.no_grad():
+                return self.calc_batch(model, batch, no_grad=False)
+            
+        pos, neg = batch
+        y_pos = model(pos.ids, pos.mask)
+        y_neg = model(neg.ids, neg.mask)
+        loss = self.log_sigmoid_loss(y_pos - y_neg)
+        acc = [sum(y_pos - y_neg > 0).item(), len(y_pos)]
+        return loss, acc
