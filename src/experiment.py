@@ -4,7 +4,7 @@ import torch.nn as nn
 import numpy as np
 
 from .utils import Batcher, DataHandler, TokenizerClass
-from .models import BilstmHier, TransformerFlat
+from .models import select_model
 
 class log_sigmoid_loss(nn.Module):
         def __init__(self):
@@ -23,12 +23,13 @@ class ExperimentHandler:
         self.log_sigmoid_loss = log_sigmoid_loss()
 
     def train(self, config):
+        print(f'Parameters: {config}')
+
         D = DataHandler(config.data_src)
         T = TokenizerClass(config.system, config.embed_lim)
         B = Batcher(config.bsz, config.schemes, config.args, config.max_len, T)
         
-        self.model = TransformerFlat(config.system, config.attention)
-        #self.model = BilstmHier(T.embeddings)
+        self.model = select_model(config, T)
         model = self.model
         
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr)
@@ -40,6 +41,7 @@ class ExperimentHandler:
         model.to(self.device)
         B.to(self.device) 
 
+        print('BEGINNING TRAINING: ', int(len(D.train)*config.c_num/config.bsz), 'BATCHES PER EPOCH')
         for epoch in range(config.epochs):
             #Training
             logger = np.zeros(3)
