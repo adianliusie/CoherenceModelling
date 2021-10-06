@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 import json
 import copy
 import time
@@ -7,11 +8,23 @@ class DataHandler():
     def __init__(self, data_src):
         if data_src in ['wsj', 'wiki', 'wiki_small']:
             self.train, self.dev, self.test = self.load_sents(data_src)
-    
+            
+        if data_src in ['gcdc']:
+            domains, sets = ['clinton', 'enron', 'yelp', 'yahoo'], ['train', 'test']
+            data_name = [f'{domain}_{set1}' for domain in domains for set1 in sets]
+            data_sets = self.load_sents(data_src)
+            
+            for name, data in zip(data_name, data_sets):
+                setattr(self, name, data)
+            
+            self.train = self.clinton_train + self.enron_train + self.yelp_train + self.yahoo_train
+            self.test = self.clinton_test + self.enron_test + self.yelp_test + self.yahoo_test
+            self.dev = self.test
+            
     def load_sents(self, data_src):
         paths = self.get_path(data_src)
         data = [self.load_data(path) for path in paths]
-        data = [self.get_sents(dataset) for dataset in data]
+        data = [self.objectify(dataset) for dataset in data]
         return data
     
     def load_data(self, path):
@@ -19,13 +32,14 @@ class DataHandler():
             data = json.load(jsonFile)
         return data
     
-    def get_sents(self, data):
-        return [i['sents'] for i in data]
+    def objectify(self, data):
+        return [SimpleNamespace(**ex) for ex in data]
 
     def get_path(self, data_src):
         if data_src == 'wiki_small': paths = self.wiki_small_paths()
         if data_src == 'wiki': paths = self.wiki_paths()
         if data_src == 'wsj':  paths = self.wsj_paths()
+        if data_src == 'gcdc':  paths = self.gcdc_paths()
         return paths
     
     def wiki_paths(self):
@@ -43,3 +57,10 @@ class DataHandler():
         paths = [f'{base_dir}/WSJ_{i}.json' for i in ['train', 'dev', 'test']]
         return paths
 
+    def gcdc_paths(self):
+        base_dir = "/home/alta/Conversational/OET/al826/2021/data/coherence/GCDC"
+        
+        domains = ['clinton', 'enron', 'yelp', 'yahoo']
+        sets = ['train', 'test']
+        paths = [f'{base_dir}/{domain}_{set1}.json' for domain in domains for set1 in sets]
+        return paths

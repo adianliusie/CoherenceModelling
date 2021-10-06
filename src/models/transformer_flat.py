@@ -11,11 +11,11 @@ class TransformerFlat(nn.Module):
         if attention: self.attention = Attention(768)
             
     def forward(self, x, mask):
-        H1 = self.transformer(x, mask)
+        H1 = self.transformer(x, mask).last_hidden_state
         if hasattr(self, 'attention'):
             h1 = self.attention(H1, mask)
         else:
-            h1 = H1.last_hidden_state[:,0]
+            h1 = H1[:,0]
         y = self.classifier(h1)
-        return y
+        return y.squeeze(-1)
 
