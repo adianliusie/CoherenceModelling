@@ -26,11 +26,12 @@ def read_embeddings(system):
         _ = next(file)
         tok_dict = {}
         embed_matrix = []
-        for line, _ in tqdm(zip(file, range(500_000)), total=500_000):
+        for line, _ in tqdm(zip(file, range(30_000)), total=300_000):
             word, *embedding = line.split()
             if len(embedding) == 300 and word not in tok_dict:
                 embed_matrix.append([float(i) for i in embedding])
                 tok_dict[word] = len(tok_dict)
+                
     return tok_dict, torch.Tensor(embed_matrix)
 
 def get_embedding_path(name):
@@ -44,6 +45,7 @@ class FakeTokenizer:
     def __init__(self, tok_dict):
         self.tok_dict = tok_dict
         self.reverse_dict = {v:k for k,v in self.tok_dict.items()}
+        self.reverse_dict[len(self.reverse_dict)-1] == '[UNK]'
         self.cls_token_id  = None
         self.sep_token_id = None
 

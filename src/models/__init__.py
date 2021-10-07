@@ -1,6 +1,8 @@
 from .bilstm_hier import BilstmHier
 from .transformer_flat import TransformerFlat
 from ..utils.tokenizer import get_embeddings
+from .general_models import DocumentClassifier
+
 
 def select_model(config):
     if config.system in ['bert', 'roberta', 'electra']:

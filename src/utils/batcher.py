@@ -50,7 +50,7 @@ class Batcher:
             pos_batch = self.batchify(coherent)
             neg_batch = self.batchify(incoherent)
             batch = pos_batch, neg_batch
-        else:
+        else:                
             batch = [[self.batchify(coh), self.batchify(inc)] for coh, inc in doc_pairs]
         return batch
     

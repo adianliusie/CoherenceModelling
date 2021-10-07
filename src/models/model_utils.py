@@ -14,8 +14,9 @@ class Attention(nn.Module):
         h1 = self.W(x)
         h1 = self.tanh(h1)
         s = self.v(h1)
+
         if torch.is_tensor(mask):
-            s.squeeze(-1)[mask==1] = -1e5
+            s.squeeze(-1)[mask==0] = -1e5
         a = self.softmax(s)
         output = torch.sum(a*x, dim=1)
         return output

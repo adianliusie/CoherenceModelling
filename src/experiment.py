@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats
 
 from .utils import Batcher, DataHandler
-from .models import select_model
+from .models import DocumentClassifier
 
 class log_sigmoid_loss(nn.Module):
         def __init__(self):
@@ -37,11 +37,11 @@ class ExperimentHandler:
         D = DataHandler(config.data_src)
         B = Batcher(config.system, config.bsz, config.schemes, 
                     config.args, config.max_len) 
-        
+
         if config.debug_cut: 
             D.train = D.train[:config.debug_cut]
             
-        self.model = select_model(config)
+        self.model = DocumentClassifier(config)
         model = self.model
         model.to(self.device)
         B.to(self.device) 
@@ -74,9 +74,12 @@ class ExperimentHandler:
                 if k%config.debug_sz==0 and k!=0:
                     print(f'{epoch:<2} {k:<6} {logger[0]/config.debug_sz:.3f}   {logger[1]/logger[2]:.4f}')
                     logger = np.zeros(3)
-                 
-                if k%config.gcdc_sz==0 and k!=0:
-                    self.eval_GCDC(config)
+            
+            continue
+            
+            #    if k%config.gcdc_sz==0 and k!=0:
+            #         self.eval_GCDC(config)
+            
             #Dev
             logger = np.zeros(3)
             for k, batch in enumerate(B.batches(D.dev, config.c_num, config.hier)):
@@ -121,8 +124,14 @@ class ExperimentHandler:
                 return self.calc_batch(model, batch, no_grad=False)
             
         pos, neg = batch
-        y_pos = model(pos.ids, pos.mask)
-        y_neg = model(neg.ids, neg.mask)
+
+        #TEMP
+        y_pos = model(pos.ids[:,:5], pos.mask[:,:5])
+        y_neg = model(neg.ids[:,:5], neg.mask[:,:5])
+        
+        #y_pos = model(pos.ids, pos.mask)
+        #y_neg = model(neg.ids, neg.mask)
+
         loss = self.loss_function(y_pos, y_neg)
         acc = [sum(y_pos - y_neg > 0).item(), len(y_pos)]
         return loss, acc
