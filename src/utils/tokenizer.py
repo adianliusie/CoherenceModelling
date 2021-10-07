@@ -26,7 +26,7 @@ def read_embeddings(system):
         _ = next(file)
         tok_dict = {}
         embed_matrix = []
-        for line, _ in tqdm(zip(file, range(30_000)), total=300_000):
+        for line, _ in tqdm(zip(file, range(300_000)), total=300_000):
             word, *embedding = line.split()
             if len(embedding) == 300 and word not in tok_dict:
                 embed_matrix.append([float(i) for i in embedding])

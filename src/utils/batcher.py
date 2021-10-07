@@ -27,12 +27,12 @@ class Batcher:
         coherent = documents.copy()
         random.shuffle(coherent)
         coherent = [self.tokenize_doc(doc.sents) for doc in tqdm(coherent)]
-        coherent = self.filter_docs(coherent, hier)
+        coherent = [self.shorten_doc(doc, hier) for doc in coherent]
         
         cor_pairs = self.corupt_pairs(coherent, c_num)
         batches = [cor_pairs[i:i+self.bsz] for i in range(0,len(cor_pairs), self.bsz)]
         batches = [self.batch_pair(batch, hier) for batch in batches]
-        return batches        
+        return batches
 
     def corupt_pairs(self, coherent, c_num):
         incoherent = [create_corrupted_set(doc, c_num, self.schemes, self.args) for doc in coherent]
@@ -87,6 +87,15 @@ class Batcher:
         if not hier: documents = [doc for doc in documents if len(self.flatten_doc(doc)) < max_len] 
         else:  documents = [doc for doc in documents if max([len(i) for i in doc]) < max_len] 
         return documents
+    
+    def shorten_doc(self, document, hier):
+        document = document.copy()
+        if hier:
+            document = [sent[:self.max_len-1] for sent in document]       
+        elif not hier:
+            while len(self.flatten_doc(document)) > self.max_len:
+                document.pop(-1)
+        return document
     
     def batchify_s(self, batch, scores):
         batch = self.batchify(batch)
