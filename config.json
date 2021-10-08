@@ -1,0 +1,1 @@
+{"system": "glove", "pooling": "attention", "hier": true, "bsz": 5, "lr": 1e-3, "epochs": 20, "scheduling": false, "optimizer": "adam", "data_src": "wiki_tiny", "loss": "classification", "c_num": 1, "schemes": [1], "args": null, "max_len": 512, "debug_sz": 100, "debug_cut": null, "save": true, "model_name": "glove-hier-c1-b5"}

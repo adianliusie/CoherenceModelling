@@ -26,9 +26,9 @@ class DocumentClassifier(nn.Module):
         
             if config.pooling == 'attention':
                 self.attention_2 = Attention(300)
-                self.pooling_2 = lambda ids, mask: self.attention(ids, mask)
+                self.pooling_2 = lambda ids: self.attention(ids)
             elif config.pooling == 'first':
-                self.pooling_2 = lambda ids, mask: ids[:,0]
+                self.pooling_2 = lambda ids: ids[:,0]
             
     def forward(self, x, mask):
         H1 = self.first_encoder(x, mask)

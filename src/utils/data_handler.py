@@ -12,8 +12,8 @@ class DataHandler():
         if data_src in ['wiki_tiny']:
             self.train, self.dev, self.test = self.load_sents('wiki_small')
             self.train = self.train[:10_000]
-            self.dev = self.dev[:5_000]
-            self.test = self.test[:5_000]
+            self.dev = self.dev[:2_000]
+            self.test = self.test[:2_000]
 
         if data_src in ['gcdc']:
             domains, sets = ['clinton', 'enron', 'yelp', 'yahoo'], ['train', 'test']
