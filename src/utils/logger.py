@@ -7,11 +7,18 @@ class Logger:
         if config.save:
             self.dir = self.get_dir(config)
             self.make_dir(config)
-            self.save_config(config)
-            self.log = self.make_logger()
         else:
-            self.log = print
+            self.dir = self.get_temp_dir()
             
+        self.save_config(config)
+        self.log = self.make_logger()
+    
+    def get_temp_dir(self):
+        base_dir = '/home/alta/Conversational/OET/al826/2021/coherence/results/temp'
+        for file_ in os.listdir(base_dir):
+            os.remove(f'{base_dir}/{file_}')
+        return base_dir
+        
     def get_dir(self, config):
         root_dir = '/home/alta/Conversational/OET/al826/2021/coherence/results/'
         system = f'{config.system}-hier' if config.hier else config.system
@@ -38,7 +45,7 @@ class Logger:
             print(*x)
             with open(log_path, 'a') as f:
                 for i in x:
-                    f.write(i)
+                    f.write(str(i) + ' ')
                 f.write('\n')
         return log
     
@@ -47,4 +54,7 @@ class Logger:
         model.to("cpu")
         torch.save(model.state_dict(), f'{self.dir}/model.pt')
         model.to(device)
-        
+    
+    @property
+    def model_path(self):
+        return f'{self.dir}/model.pth'

@@ -55,10 +55,10 @@ class Batcher:
         return batch
     
     def labelled_batches(self, documents, hier=False):
-        coherent = documents.copy()
-        random.shuffle(coherent)
-        sents = [self.tokenize_doc(doc.sents) for doc in tqdm(coherent)]
-        scores = [doc.score for doc in tqdm(coherent)]
+        documents = documents.copy()
+        random.shuffle(documents)
+        sents = [self.tokenize_doc(doc.sents) for doc in tqdm(documents)]
+        scores = [doc.score for doc in tqdm(documents)]
         batches = [(sents[i:i+self.bsz], scores[i:i+self.bsz]) for i in range(0,len(sents), self.bsz)]
         batches = [self.batch_lab(*batch, hier) for batch in batches]
         return batches
