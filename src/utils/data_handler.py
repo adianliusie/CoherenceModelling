@@ -7,10 +7,10 @@ import numpy as np
 class DataHandler():
     def __init__(self, data_src):
         if data_src in ['wsj', 'wiki', 'wiki_small']:
-            self.train, self.dev, self.test = self.load_sents(data_src)
+            self.train, self.dev, self.test = self.parse_data(data_src)
  
         if data_src in ['wiki_tiny']:
-            self.train, self.dev, self.test = self.load_sents('wiki_small')
+            self.train, self.dev, self.test = self.parse_data('wiki_small')
             self.train = self.train[:10_000]
             self.dev = self.dev[:2_000]
             self.test = self.test[:2_000]
@@ -18,7 +18,7 @@ class DataHandler():
         if data_src in ['gcdc']:
             domains, sets = ['clinton', 'enron', 'yelp', 'yahoo'], ['train', 'test']
             data_name = [f'{domain}_{set1}' for domain in domains for set1 in sets]
-            data_sets = self.load_sents(data_src)
+            data_sets = self.parse_data(data_src)
             
             for name, data in zip(data_name, data_sets):
                 setattr(self, name, data)
@@ -27,7 +27,7 @@ class DataHandler():
             self.test = self.clinton_test + self.enron_test + self.yelp_test + self.yahoo_test
             self.dev = self.test
             
-    def load_sents(self, data_src):
+    def parse_data(self, data_src):
         paths = self.get_path(data_src)
         data = [self.load_data(path) for path in paths]
         data = [self.objectify(dataset) for dataset in data]
@@ -65,7 +65,6 @@ class DataHandler():
 
     def gcdc_paths(self):
         base_dir = "/home/alta/Conversational/OET/al826/2021/data/coherence/GCDC"
-        
         domains = ['clinton', 'enron', 'yelp', 'yahoo']
         sets = ['train', 'test']
         paths = [f'{base_dir}/{domain}_{set1}.json' for domain in domains for set1 in sets]
