@@ -57,4 +57,4 @@ class Logger:
     
     @property
     def model_path(self):
-        return f'{self.dir}/model.pth'
+        return f'{self.dir}/model.pt'

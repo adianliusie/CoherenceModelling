@@ -11,11 +11,11 @@ Batch = namedtuple('Batch', ['ids', 'mask'])
 ScoreBatch = namedtuple('ScoreBatch', ['ids', 'mask', 'score'])
 
 class Batcher:
-    def __init__(self, system, bsz=8, schemes=[1], args=None, max_len=512):
+    def __init__(self, system, bsz=8, max_len=512, schemes=[1], args=None):
         self.bsz = bsz
+        self.max_len = max_len
         self.schemes = schemes
         self.args = args
-        self.max_len = max_len
         
         self.tokenizer = get_tokenizer(system)
         self.CLS = self.tokenizer.cls_token_id

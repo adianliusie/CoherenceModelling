@@ -18,20 +18,18 @@ class ExperimentHandler:
         
         self.config = config
         self.L = Logger(config)
-        self.L.log(1,2,3,4,5,6)
         self.model = DocumentClassifier(config)
         
-        self.cross_loss = nn.CrossEntropyLoss()
         self.pair_loss_fn = select_loss(config.loss)
 
-    def train_corruption(self, config=None):
+    def corrupted_training(self, config=None):
         if config == None: config = self.config
         self.L.log(f'Parameters: {config}')
         
         # First part of the script is set up
         D = DataHandler(config.data_src)
-        B = Batcher(config.system, config.bsz, config.schemes, 
-                    config.args, config.max_len) 
+        B = Batcher(config.system, config.bsz, config.max_len,
+                    config.schemes, config.args) 
         
         if config.debug_len: 
             D.train = D.train[:config.debug_len]
@@ -84,14 +82,14 @@ class ExperimentHandler:
                 best_acc = dev_acc 
 
             #GCDC correlation
-            spearman = self.eval_GCDC(config)
+            spearman = self.GCDC_evaluation(config)
             self.L.log('GCDC correlation', spearman)
             self.L.log(50*'--')
 
-    def eval_corruption(self, config=None):
+    def corrupt_eval(self, config=None):
         D = DataHandler(config.data_src)
-        B = Batcher(config.system, config.bsz, config.schemes, 
-                    config.args, config.max_len) 
+        B = Batcher(config.system, config.bsz, config.max_len,
+                    config.schemes, config.args) 
         
         self.model.load_state_dict(torch.load(self.L.model_path))
         self.model.to(self.device)
@@ -101,46 +99,50 @@ class ExperimentHandler:
         random.seed(10)
         logger = np.zeros(3)
         with torch.no_grad():
-            for k, batch in enumerate(tqdm(B.batches(D.test, c_num=20, hier=config.hier))):
-                if config.hier:  loss, batch_acc = self.calc_batch_hier(batch, no_grad=True)
-                else:            loss, batch_acc = self.calc_batch(batch, no_grad=True)
+            for k, batch in enumerate(tqdm(B.batches(D.test, c_num=5, hier=config.hier))):
+                if config.hier:  loss, batch_acc = self.pair_loss_hier(batch, no_grad=True)
+                else:            loss, batch_acc = self.pair_loss(batch, no_grad=True)
                 logger += [loss.item(), *batch_acc]
 
         self.L.log('FINAL EVAL')
         self.L.log(f'\n{len(D.test):<5} {logger[0]/k:.3f}   {logger[1]/logger[2]:.4f}\n')
         
-    def eval_GCDC(self, config=None):
+    def GCDC_evaluation(self, mode='dev', config=None):
         if config == None: config = self.config
 
         D = DataHandler('gcdc')
-        B = Batcher(config.system, config.bsz, config.schemes, 
-                    config.args, config.max_len) 
-        model = self.model
-        model.to(self.device)
+        B = Batcher(config.system, config.bsz, config.max_len) 
+        self.model.to(self.device)
         B.to(self.device)
 
-        scores = []
-        predictions = []
+        if mode == 'dev':  eval_sets = [D.clinton_dev,  D.enron_dev,  D.yahoo_dev,  D.yelp_dev]
+        else:            eval_sets = [D.clinton_test, D.enron_test, D.yahoo_test, D.yelp_test]
 
-        for k, batch in enumerate(B.labelled_batches(D.clinton_train, config.hier)):
-            if config.hier:
-                for doc in batch:
-                    y = model(doc.ids, doc.mask)
-                    predictions.append(y.item())
-                    scores.append(doc.score.item())
-            else:
-                y = model(batch.ids, batch.mask)
-                predictions += y.tolist()
-                scores += batch.score.tolist()
-                
-        self.get_correlations(predictions, scores)
-        
-    def get_correlations(self, predictions, scores):
+        for data_set in eval_sets:
+            scores = []
+            predictions = []
+
+            for k, batch in enumerate(B.labelled_batches(data_set, config.hier)):
+                if config.hier:
+                    for doc in batch:
+                        y = self.model(doc.ids, doc.mask)
+                        predictions.append(y.item())
+                        scores.append(doc.score.item())
+                else:
+                    y = self.model(batch.ids, batch.mask)
+                    predictions += y.tolist()
+                    scores += batch.score.tolist()
+             
+            MSE, spearman = self.reg_perf(predictions, scores)
+            print(MSE, spearman)
+        return spearman
+    
+    def reg_perf(self, predictions, scores):
+        predictions, scores = np.array(predictions), np.array(scores)
         pearson = stats.pearsonr(predictions, scores)[0]
         spearman = stats.spearmanr(predictions, scores)[0]
-        print(spearman)
-        return spearman
-        #self.L.log(f'GCDC correlation: PEAR {pearson:.3f}    SPEAR P {spearman:.3f}')
+        MSE = np.mean((predictions-scores)**2)
+        return MSE, spearman
 
     def pair_loss(self, batch, no_grad=False):
         if no_grad==True:
