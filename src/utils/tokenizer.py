@@ -4,7 +4,7 @@ from functools import lru_cache
 import torch
 
 def get_tokenizer(system):
-    if system in ['bert', 'electra']:
+    if system in ['bert', 'electra', 'rand']:
         tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
         
     elif system == 'roberta':

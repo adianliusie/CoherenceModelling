@@ -10,7 +10,7 @@ class DocumentClassifier(nn.Module):
         super().__init__()
         self.classifier = nn.Linear(300, 1)
         
-        if config.system in ['bert','roberta','electra']: self.first_encoder = TransEncoder(config.system) 
+        if config.system in ['bert','roberta','electra','rand']: self.first_encoder = TransEncoder(config.system) 
         elif config.system in ['glove', 'word2vec']:      self.first_encoder = BilstmEncoder(config.system) 
 
         if config.pooling == 'attention':
@@ -37,7 +37,8 @@ class DocumentClassifier(nn.Module):
             h = h.unsqueeze(0)
             H2 = self.second_encoder(h)
             h = self.pooling_2(H2)
-        y = self.classifier(h).squeeze(-1)
+        y = self.classifier(h)
+        if y.shape[-1] == 1: y = y.squeeze(-1)
         return y
 
 class TransEncoder(nn.Module):
@@ -71,11 +72,12 @@ class HierTransEncoder(nn.Module):
     def __init__(self, hsz=300):
         super().__init__()
         heads = hsz//64
-        config = BertConfig(hidden_size=hsz, num_hidden_layers=6, num_attention_heads=heads, intermediate_size=4*hsz)
+        config = BertConfig(hidden_size=hsz, num_hidden_layers=6, num_attention_heads=heads, 
+                            intermediate_size=4*hsz, return_dict=True)
         self.transformer = BertModel(config)
 
     def forward(self, x):
-        H1 = self.transformer(inputs_embeds=x, return_dict=True).last_hidden_state
+        H1 = self.transformer(inputs_embeds=x).last_hidden_state
         return H1 
 
 class HierBilstmEncoder(nn.Module):

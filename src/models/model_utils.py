@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import BertModel, RobertaModel, ElectraModel
+from transformers import BertConfig, BertModel, RobertaModel, ElectraModel
 
 class Attention(nn.Module):
     tanh = nn.Tanh()
@@ -25,6 +25,6 @@ def get_transformer(name):
     if   name ==    'bert': transformer = BertModel.from_pretrained('bert-base-uncased', return_dict=True)
     elif name == 'roberta': transformer = RobertaModel.from_pretrained('roberta-base', return_dict=True)
     elif name == 'electra': transformer = ElectraModel.from_pretrained('google/electra-base-discriminator')
-    elif name ==    'rand': transformer = BertModel()
+    elif name ==    'rand': transformer = BertModel(BertConfig(return_dict=True))
     else: raise Exception
     return transformer

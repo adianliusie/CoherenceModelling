@@ -11,7 +11,8 @@ Batch = namedtuple('Batch', ['ids', 'mask'])
 ScoreBatch = namedtuple('ScoreBatch', ['ids', 'mask', 'score'])
 
 class Batcher:
-    def __init__(self, system, bsz=8, max_len=512, schemes=[1], args=None):
+    def __init__(self, system, hier=False, bsz=8, max_len=512, schemes=[1], args=None):
+        self.hier = hier 
         self.bsz = bsz
         self.max_len = max_len
         self.schemes = schemes
@@ -23,15 +24,15 @@ class Batcher:
         
         self.device = torch.device('cpu')
         
-    def batches(self, documents, c_num, hier=False):
+    def batches(self, documents, c_num):
         coherent = documents.copy()
         random.shuffle(coherent)
         coherent = [self.tokenize_doc(doc.sents) for doc in tqdm(coherent)]
-        coherent = [self.shorten_doc(doc, hier) for doc in coherent]
+        coherent = [self.shorten_doc(doc) for doc in coherent]
         
         cor_pairs = self.corupt_pairs(coherent, c_num)
         batches = [cor_pairs[i:i+self.bsz] for i in range(0,len(cor_pairs), self.bsz)]
-        batches = [self.batch_pair(batch, hier) for batch in batches]
+        batches = [self.batch_pair(batch) for batch in batches]
         return batches
 
     def corupt_pairs(self, coherent, c_num):
@@ -42,8 +43,8 @@ class Batcher:
                 examples.append([pos, neg])
         return examples
     
-    def batch_pair(self, doc_pairs, hier):
-        if hier == False:
+    def batch_pair(self, doc_pairs):
+        if self.hier == False:
             coherent, incoherent = zip(*doc_pairs)
             coherent = [self.flatten_doc(doc) for doc in coherent]
             incoherent = [self.flatten_doc(doc) for doc in incoherent]
@@ -54,20 +55,22 @@ class Batcher:
             batch = [[self.batchify(coh), self.batchify(inc)] for coh, inc in doc_pairs]
         return batch
     
-    def labelled_batches(self, documents, hier=False):
+    def labelled_batches(self, documents, classify=False):
         documents = documents.copy()
         random.shuffle(documents)
-        sents = [self.tokenize_doc(doc.sents) for doc in tqdm(documents)]
-        scores = [doc.score for doc in tqdm(documents)]
+
+        sents = [self.tokenize_doc(doc.sents) for doc in documents]
+        if classify: scores = [int(doc.avg_score) for doc in documents]
+        else:        scores = [float(doc.score) for doc in documents]
         batches = [(sents[i:i+self.bsz], scores[i:i+self.bsz]) for i in range(0,len(sents), self.bsz)]
-        batches = [self.batch_lab(*batch, hier) for batch in batches]
+        batches = [self.batch_lab(*batch) for batch in batches]
         return batches
     
-    def batch_lab(self, documents, scores, hier):
-        if hier == False:
+    def batch_lab(self, documents, scores):
+        if self.hier == False:
             documents = [self.flatten_doc(doc) for doc in documents]
             batch = self.batchify_s(documents, scores)
-        if hier == True:
+        if self.hier == True:
             batch = [self.batchify_s(doc, [score]) for doc, score in zip(documents, scores)]
         return batch     
         
@@ -82,24 +85,27 @@ class Batcher:
             ids = flatten(document)
         return ids
         
-    def filter_docs(self, documents, hier, max_len=None):
+    def filter_docs(self, documents, max_len=None):
         if max_len is None: max_len = self.max_len
-        if not hier: documents = [doc for doc in documents if len(self.flatten_doc(doc)) < max_len] 
+        if not self.hier: documents = [doc for doc in documents if len(self.flatten_doc(doc)) < max_len] 
         else:  documents = [doc for doc in documents if max([len(i) for i in doc]) < max_len] 
         return documents
     
-    def shorten_doc(self, document, hier):
+    def shorten_doc(self, document):
         document = document.copy()
-        if hier:
+        if self.hier:
             document = [sent[:self.max_len-1] for sent in document]       
-        elif not hier:
+        elif not self.hier:
             while len(self.flatten_doc(document)) > self.max_len:
                 document.pop(-1)
         return document
     
     def batchify_s(self, batch, scores):
         batch = self.batchify(batch)
-        scores = torch.FloatTensor(scores).to(self.device)
+        if type(scores[0]) == int:
+            scores = torch.LongTensor(scores).to(self.device)
+        else:
+            scores = torch.FloatTensor(scores).to(self.device)
         return ScoreBatch(batch.ids, batch.mask, scores)
     
     def batchify(self, batch):
