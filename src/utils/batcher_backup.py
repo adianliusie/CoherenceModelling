@@ -55,9 +55,9 @@ class Batcher:
             batch = [[self.batchify(coh), self.batchify(inc)] for coh, inc in doc_pairs]
         return batch
     
-    def labelled_batches(self, documents, classify=False):
+    def labelled_batches(self, documents, shuffle=True, classify=False):
         documents = documents.copy()
-        random.shuffle(documents)
+        if shuffle: random.shuffle(documents)
 
         sents = [self.tokenize_doc(doc.sents) for doc in documents]
         if classify: scores = [int(doc.avg_score) for doc in documents]

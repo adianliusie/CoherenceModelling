@@ -6,14 +6,24 @@ import numpy as np
 
 class DataHandler():
     def __init__(self, data_src):
-        if data_src in ['wsj', 'wiki', 'wiki_small']:
+        if data_src in ['wsj']:
             self.train, self.dev, self.test = self.get_data(data_src)
- 
-        if data_src in ['wiki_tiny']:
+
+        if data_src in ['wiki', 'wiki_small']:
+            self.train, self.dev, self.test = self.get_data('wiki')
+            if data_src == 'wiki_small':
+                self.train = self.train[:100_000]
+            self.dev = self.dev[:5_000]
+            self.test = self.test[:5_000]
+
+        if data_src in ['wiki_debug']:
             self.train, self.dev, self.test = self.get_data('wiki_small')
             self.train = self.train[:1_000]
             self.dev = self.dev[:200]
             self.test = self.test[:200]
+
+        if data_src in ['wiki_unfiltered']:
+            self.train = self.get_data('wiki_unfiltered')[0]
 
         if data_src in ['gcdc']:
             data = self.get_data('gcdc')
@@ -51,19 +61,25 @@ class DataHandler():
     def get_paths(self, data_src):
         if data_src == 'wiki_small': paths = self.wiki_small_paths()
         if data_src == 'wiki': paths = self.wiki_paths()
+        if data_src == 'wiki_unfiltered': paths = self.wiki_unfiltered_paths()
         if data_src == 'wsj':  paths = self.wsj_paths()
         if data_src == 'gcdc':  paths = self.gcdc_paths()
         return paths
     
     def wiki_paths(self):
-        base_dir = '/home/alta/Conversational/OET/al826/2021/data/unlabeled'
+        base_dir = '/home/alta/Conversational/OET/al826/2021/data/unlabelled'
         paths = [f'{base_dir}/wiki_{i}.json' for i in ['train', 'dev', 'test']]
         return paths
     
     def wiki_small_paths(self):
         paths = self.wiki_paths()
-        paths[0] = '/home/alta/Conversational/OET/al826/2021/data/unlabeled/wiki_small.json'
+        paths[0] = '/home/alta/Conversational/OET/al826/2021/data/unlabelled/wiki_small.json'
         return paths
+    
+    def wiki_unfiltered_paths(self):
+        base_dir = '/home/alta/Conversational/OET/al826/2021/data/unlabelled'
+        path = [f'{base_dir}/wiki_unfiltered.json']
+        return path
     
     def wsj_paths(self):
         base_dir = '/home/alta/Conversational/OET/al826/2021/data/coherence/WSJ'

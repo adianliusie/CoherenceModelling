@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformers import BertConfig, BertModel, RobertaModel, ElectraModel
 
-from ..utils.tokenizer import get_embeddings
+from ..helpers.tokenizer import get_embeddings
 from .model_utils import Attention, get_transformer 
 
 class DocumentClassifier(nn.Module):

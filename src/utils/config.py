@@ -29,7 +29,7 @@ def select_loss(loss):
     
     if loss == 'classification':   func = classification
     elif loss == 'ranking':        func = ranking
-    elif loss == 'cross_loss':     func = cross_loss
+    elif loss == 'cross':          func = cross_loss
     elif loss == 'mse':            func = MSE
     return func
 

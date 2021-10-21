@@ -1,6 +1,6 @@
 from .bilstm_hier import BilstmHier
 from .transformer_flat import TransformerFlat
-from ..utils.tokenizer import get_embeddings
+from ..helpers.tokenizer import get_embeddings
 from .general_models import DocumentClassifier
 
 
