@@ -40,4 +40,5 @@ def triangle_scheduler(SGD_steps):
             output = 10*i/SGD_steps
         else:
             output = 1 - ((i - 0.1*SGD_steps)/(0.9*SGD_steps))
+        return output
     return func

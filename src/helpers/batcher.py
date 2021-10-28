@@ -58,7 +58,6 @@ class Batcher:
     def labelled_batches(self, documents, shuffle=True):
         documents = documents.copy()
         if shuffle: random.shuffle(documents)
-
         sents = [self.tokenize_doc(doc.sents) for doc in documents]
         scores = [doc.score for doc in documents]
         batches = [(sents[i:i+self.bsz], scores[i:i+self.bsz]) for i in range(0,len(sents), self.bsz)]

@@ -24,7 +24,7 @@ class Logger:
         return base_dir
         
     def get_dir(self):
-        base_dir = f'/home/alta/Conversational/OET/al826/2021/coherence/results/synthetic_swp1/{self.exp_name}'
+        base_dir = f'/home/alta/Conversational/OET/al826/2021/coherence/results/{self.exp_name}'
         return base_dir
        
     def make_dir(self):
@@ -48,7 +48,7 @@ class Logger:
                     f.write(str(i) + ' ')
                 f.write('\n')
         return log
-         
+    
     def make_logger(self):
         log_path = f'{self.dir}/log.txt' 
         open(log_path, 'w+').close()                  
@@ -68,22 +68,15 @@ class Logger:
     
     def monitor(self, value, mode):
         if not (hasattr(self, 'trace')):
-            self.trace = {'train_loss':[], 'train_acc':[], 'dev_loss':[], 
-                          'dev_acc':[], 'gcdc_spear':[], 'gcdc_acc':[], 
-                          'gcdc_mean':[], 'gcdc_var':[], 'gcdc_mse':[]}
+            self.trace = {'train':[], 'gcdc_data':[[], [], [], []]}
 
         if mode == 'train':
-            self.trace['train_loss'].append(value[0])
-            self.trace['train_acc'].append(value[1])
-                
-        elif mode == 'dev':
-            self.trace['dev_loss'].append(value[0])
-            self.trace['dev_acc'].append(value[1])
+            self.trace['train'].append(value)
                 
         elif mode == 'gcdc':
-            for key in vars(value):
-                self.trace[f'gcdc_{key}'].append(getattr(value, key))
-        
+            for k, data in enumerate(value):
+                self.trace['gcdc_data'][k].append(list(vars(data).values()))
+            
         self.update_loss_curves()
                 
     def update_loss_curves(self):
